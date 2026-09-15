@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gate House Check-In &mdash; Second Harvest Food Bank</title>
+<style>
+  :root{
+    /* Second Harvest brand palette */
+    --navy:#1B2A4A; --navy-dk:#142038; --navy-md:#2E4370; --navy-lt:#EEF1F7;
+    --cran:#A6192E; --cran-dk:#85141F; --cran-lt:#F7E8EA;
+    --ink:#141B27; --muted:#5A6577; --line:#DCE1EA; --bg:#F4F6F9;
+    --amber:#8A6100; --white:#fff;
+    --r:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); font-size:17px; line-height:1.4;
+    -webkit-text-size-adjust:100%;
+  }
+  header{
+    background:var(--navy); color:#fff; padding:14px 18px;
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    border-bottom:4px solid var(--cran);
+  }
+  header h1{font-size:1.15rem; margin:0; font-weight:650; letter-spacing:.2px}
+  header .sub{font-size:.82rem; opacity:.85}
+  header .clock{margin-left:auto; text-align:right; font-variant-numeric:tabular-nums}
+  header .clock .t{font-size:1.5rem; font-weight:700; line-height:1}
+  header .clock .d{font-size:.8rem; opacity:.9}
+
+  nav{display:flex; background:var(--navy-dk)}
+  nav button{
+    flex:1; padding:14px 10px; background:none; border:0; color:#B9C4D8;
+    font-size:1rem; font-weight:600; cursor:pointer; border-bottom:4px solid transparent;
+  }
+  nav button:hover{color:#fff; background:rgba(255,255,255,.06)}
+  nav button.active{color:#fff; border-bottom-color:var(--cran); background:rgba(255,255,255,.09)}
+
+  main{max-width:1050px; margin:0 auto; padding:18px 16px 60px}
+  .card{background:var(--white); border:1px solid var(--line); border-radius:var(--r); padding:20px; margin-bottom:16px}
+  .card h2{margin:0 0 14px; font-size:1.05rem; color:var(--navy); font-weight:700}
+
+  .grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  label{display:block; font-size:.8rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.5px; color:var(--muted); margin-bottom:5px}
+  label .opt{font-weight:500; text-transform:none; letter-spacing:0}
+  input,select{
+    width:100%; padding:13px 12px; font-size:1.05rem; font-family:inherit; color:var(--ink);
+    border:1.5px solid var(--line); border-radius:9px; background:#fff;
+  }
+  input:focus,select:focus{outline:none; border-color:var(--navy-md); box-shadow:0 0 0 3px #DDE4F0}
+  input.err{border-color:var(--cran); background:#FDF4F5}
+  input.auto,select.auto{background:#EDF2FA; border-color:#9DB0D0}
+  .hint{
+    margin-top:10px; padding:11px 13px; border-radius:9px; font-size:.9rem;
+    background:var(--navy-lt); border:1.5px solid #B6C3DA; color:var(--navy);
+    border-left:5px solid var(--cran);
+  }
+  .hint b{color:var(--navy-dk)}
+  .hint a{color:var(--cran); font-weight:700; cursor:pointer; text-decoration:underline}
+  #plate{font-size:1.5rem; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+    text-align:center; color:var(--navy)}
+
+  .btn{
+    padding:14px 22px; font-size:1.02rem; font-weight:700; font-family:inherit;
+    border-radius:9px; border:1.5px solid transparent; cursor:pointer;
+  }
+  .btn-primary{background:var(--cran); color:#fff}
+  .btn-primary:hover{background:var(--cran-dk)}
+  .btn-primary:disabled{background:#C39AA1; cursor:not-allowed}
+  .btn-ghost{background:#fff; color:var(--navy); border-color:#C3CCDC}
+  .btn-ghost:hover{background:var(--navy-lt); border-color:var(--navy-md)}
+  .btn-sm{padding:9px 14px; font-size:.9rem}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  .actions{margin-top:20px; display:flex; gap:12px; flex-wrap:wrap}
+
+  .toast{
+    margin-bottom:16px; padding:14px 16px; border-radius:var(--r); font-weight:600;
+    background:var(--navy-lt); border:1.5px solid #B6C3DA; color:var(--navy);
+    border-left:6px solid var(--navy);
+  }
+  .toast.warn{background:var(--cran-lt); border-color:#E4B7BE; border-left-color:var(--cran); color:var(--cran-dk)}
+  .hidden{display:none !important}
+
+  table{width:100%; border-collapse:collapse; font-size:.95rem}
+  th,td{padding:10px 8px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top}
+  th{font-size:.74rem; text-transform:uppercase; letter-spacing:.5px; color:#fff;
+    background:var(--navy); position:sticky; top:0; cursor:pointer; white-space:nowrap}
+  th:hover{background:var(--navy-md)}
+  th .ar{color:#F3A9B4; font-size:.9rem}
+  tbody tr:hover{background:var(--navy-lt)}
+  td.plate{font-weight:700; letter-spacing:1px; white-space:nowrap; color:var(--navy)}
+  td.when{white-space:nowrap; font-variant-numeric:tabular-nums; color:var(--muted)}
+  .tbl-wrap{max-height:60vh; overflow:auto; border:1px solid var(--line); border-radius:var(--r)}
+  .del{background:none; border:0; color:var(--cran); cursor:pointer; font-size:1.05rem; padding:2px 6px; border-radius:6px}
+  .del:hover{background:var(--cran-lt)}
+  .empty{padding:36px 16px; text-align:center; color:var(--muted)}
+  .count{font-size:.88rem; color:var(--muted); margin:12px 0}
+  .count b{color:var(--ink)}
+  mark{background:#F9D9DE; color:var(--cran-dk); padding:0 2px; border-radius:3px; font-weight:600}
+
+  .status{display:flex; align-items:center; gap:8px; font-size:.85rem; color:var(--muted); flex-wrap:wrap}
+  .dot{width:9px; height:9px; border-radius:50%; background:var(--cran); flex:none}
+  .dot.ok{background:var(--navy)}
+  .help{font-size:.86rem; color:var(--muted); margin:8px 0 0}
+  .help code{background:var(--bg); padding:1px 5px; border-radius:4px; font-size:.85em}
+  hr{border:0; border-top:1px solid var(--line); margin:18px 0}
+  @media print{ header,nav,.noprint{display:none} .tbl-wrap{max-height:none; border:0} body{background:#fff} }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Gate House Check-In</h1>
+    <div class="sub">Second Harvest Food Bank of Northwest North Carolina</div>
+  </div>
+  <div class="clock"><div class="t" id="clockT">--:--</div><div class="d" id="clockD">&nbsp;</div></div>
+</header>
+
+<nav>
+  <button id="tabCheckin" class="active" onclick="showTab('checkin')">Check In</button>
+  <button id="tabLog" onclick="showTab('log')">Entry Log <span id="logBadge"></span></button>
+  <button id="tabSettings" onclick="showTab('settings')">Settings</button>
+</nav>
+
+<main>
+
+<!-- ============ CHECK IN ============ -->
+<section id="viewCheckin">
+  <div id="toast" class="toast hidden"></div>
+
+  <div class="card">
+    <h2>New Entry</h2>
+    <form id="form" autocomplete="off">
+      <div class="grid">
+        <div style="grid-column:1/-1">
+          <label for="plate">License Plate <span class="opt">(required)</span></label>
+          <input id="plate" name="plate" maxlength="12" placeholder="ABC-1234" autofocus>
+          <div id="vehHint" class="hint hidden"></div>
+        </div>
+        <div>
+          <label for="company">Company / Organization <span class="opt">(required)</span></label>
+          <input id="company" name="company" list="companyList" maxlength="80" placeholder="e.g. Food Lion Transport">
+          <datalist id="companyList"></datalist>
+        </div>
+        <div>
+          <label for="person">Driver / Person Name <span class="opt">(required)</span></label>
+          <input id="person" name="person" list="personList" maxlength="80" placeholder="e.g. John Smith">
+          <datalist id="personList"></datalist>
+        </div>
+        <div>
+          <label for="purpose">Purpose <span class="opt">(optional)</span></label>
+          <select id="purpose" name="purpose">
+            <option value="">&mdash; Select &mdash;</option>
+            <option>Delivery / Inbound</option>
+            <option>Donation Drop-off</option>
+            <option>Vendor / Service</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div style="grid-column:1/-1">
+          <label for="notes">Notes <span class="opt">(optional)</span></label>
+          <input id="notes" name="notes" maxlength="200" placeholder="Trailer #, dock assignment, escort, etc.">
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">Check In &amp; Stamp Time</button>
+        <button type="button" class="btn btn-ghost" onclick="resetForm(true)">Clear</button>
+      </div>
+      <p class="help">Date and time are stamped automatically when you check in. Press <code>Enter</code> to submit.
+        Type a plate that has been here before and the company, Partner ID and purpose fill in
+        from its last visit &mdash; the driver name is always left blank for you to enter.</p>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Last 5 Entries</h2>
+    <div id="recent"></div>
+  </div>
+</section>
+
+<!-- ============ LOG ============ -->
+<section id="viewLog" class="hidden">
+  <div class="card noprint">
+    <h2>Search Entries</h2>
+    <div class="grid">
+      <div style="grid-column:1/-1">
+        <label for="q">Search plate, company, name, partner ID, notes</label>
+        <input id="q" placeholder="Type any part of a plate, name, company or partner ID&hellip;">
+      </div>
+      <div><label for="dFrom">Date from</label><input type="date" id="dFrom"></div>
+      <div><label for="dTo">Date to</label><input type="date" id="dTo"></div>
+      <div><label for="tFrom">Time from</label><input type="time" id="tFrom"></div>
+      <div><label for="tTo">Time to</label><input type="time" id="tTo"></div>
+      <div>
+        <label for="fPurpose">Purpose</label>
+        <select id="fPurpose"><option value="">All</option></select>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-ghost btn-sm" onclick="quick('today')">Today</button>
+      <button class="btn btn-ghost btn-sm" onclick="quick('yesterday')">Yesterday</button>
+      <button class="btn btn-ghost btn-sm" onclick="quick('7')">Last 7 days</button>
+      <button class="btn btn-ghost btn-sm" onclick="quick('30')">Last 30 days</button>
+      <button class="btn btn-ghost btn-sm" onclick="quick('all')">All time</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Reset filters</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row noprint" style="justify-content:space-between">
+      <div class="count" id="count"></div>
+      <div class="row">
+        <button class="btn btn-ghost btn-sm" onclick="exportCsv()">Export CSV</button>
+        <button class="btn btn-ghost btn-sm" onclick="window.print()">Print</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th data-sort="ts">Date &amp; Time <span class="ar" id="ar-ts"></span></th>
+          <th data-sort="plate">License Plate <span class="ar" id="ar-plate"></span></th>
+          <th data-sort="company">Company <span class="ar" id="ar-company"></span></th>
+          <th data-sort="person">Person <span class="ar" id="ar-person"></span></th>
+          <th data-sort="purpose">Purpose <span class="ar" id="ar-purpose"></span></th>
+          <th>Notes</th>
+          <th class="noprint"></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SETTINGS ============ -->
+<section id="viewSettings" class="hidden">
+  <div class="card">
+    <h2>Where entries are saved</h2>
+    <div class="status" style="margin-bottom:12px">
+      <span class="dot" id="fsDot"></span><span id="fsStatus">Checking&hellip;</span>
+    </div>
+    <div class="row">
+      <button class="btn btn-ghost btn-sm" id="btnConnect" onclick="connectFile()">Connect log file&hellip;</button>
+      <button class="btn btn-ghost btn-sm" onclick="saveToFile(true)">Save to file now</button>
+      <button class="btn btn-ghost btn-sm" onclick="disconnectFile()">Disconnect</button>
+    </div>
+    <p class="help">
+      Every entry is saved instantly in this browser on this device. For a durable copy,
+      click <b>Connect log file</b> once and pick (or create) a file such as
+      <code>gatehouse-log.json</code> &mdash; put it on a shared network drive and every entry
+      is written there too. Chrome or Edge required for this option; other browsers keep the
+      in-browser copy and CSV export.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Backup &amp; restore</h2>
+    <div class="row">
+      <button class="btn btn-ghost btn-sm" onclick="exportAllCsv()">Download full CSV</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportJson()">Download JSON backup</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('importFile').click()">Restore / merge from JSON&hellip;</button>
+      <input type="file" id="importFile" accept=".json" class="hidden" onchange="importJson(this)">
+    </div>
+    <p class="help">Restoring merges entries and skips duplicates, so it is safe to import the same backup twice.</p>
+    <hr>
+    <h2>Danger zone</h2>
+    <button class="btn btn-ghost btn-sm" style="color:var(--cran-dk); border-color:#E4B7BE" onclick="wipe()">Delete all entries on this device</button>
+    <p class="help">Download a backup first. This cannot be undone.</p>
+  </div>
+
+  <div class="card">
+    <h2>Google Sheets sync</h2>
+    <div class="status" style="margin-bottom:12px">
+      <span class="dot" id="syncDot"></span><span id="syncStatus">Not configured</span>
+    </div>
+    <div>
+      <label for="sheetUrl">Apps Script Web App URL</label>
+      <input id="sheetUrl" placeholder="https://script.google.com/macros/s/…/exec" style="font-size:.88rem">
+    </div>
+    <div class="actions">
+      <button class="btn btn-ghost btn-sm" onclick="saveSheetUrl()">Save URL</button>
+      <button class="btn btn-ghost btn-sm" onclick="testSheetSync()">Send test entry</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearSheetUrl()">Disconnect</button>
+    </div>
+    <p class="help">
+      Paste the deployed Apps Script URL here. Every new check-in is sent to the sheet in real time.
+      Set this once — it is remembered in this browser.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Setting up the gate house tablet</h2>
+    <p class="help" style="font-size:.95rem">
+      1. Keep this file on the tablet (or a shared drive) and open it in Chrome or Edge.<br>
+      2. Bookmark it, or use browser menu &rarr; <i>Install / Create shortcut</i> so it opens full screen like an app.<br>
+      3. In <b>Settings</b>, connect a log file on the shared drive.<br>
+      4. Do not clear browsing data on this device &mdash; that removes the in-browser copy.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<script>
+"use strict";
+/* ========== storage ========== */
+const LS_KEY = "shfb_gatehouse_entries_v1";
+let entries = [];
+let fileHandle = null;
+
+function loadLocal(){
+  try{ entries = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }
+  catch(e){ entries = []; }
+  if(!Array.isArray(entries)) entries = [];
+}
+function saveLocal(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(entries)); }
+  catch(e){ alert("Could not save locally: " + e.message); }
+}
+
+/* --- IndexedDB: remember the chosen log file between sessions --- */
+function idb(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open("shfb_gatehouse", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("kv");
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbSet(k, v){
+  const db = await idb();
+  return new Promise((res, rej) => {
+    const t = db.transaction("kv", "readwrite");
+    t.objectStore("kv").put(v, k);
+    t.oncomplete = res; t.onerror = () => rej(t.error);
+  });
+}
+async function idbGet(k){
+  const db = await idb();
+  return new Promise((res, rej) => {
+    const t = db.transaction("kv", "readonly");
+    const q = t.objectStore("kv").get(k);
+    q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+  });
+}
+
+const fsSupported = () => typeof window.showSaveFilePicker === "function";
+
+async function restoreFileHandle(){
+  if(!fsSupported()) return fsUi();
+  try{
+    const h = await idbGet("logFile");
+    if(!h) return fsUi();
+    const perm = await h.queryPermission({mode:"readwrite"});
+    if(perm === "granted"){ fileHandle = h; }
+    else { fileHandle = h; fsUi("needsPermission"); return; }
+  }catch(e){ /* ignore */ }
+  fsUi();
+}
+async function connectFile(){
+  if(!fsSupported()){
+    alert("This browser cannot write directly to a file. Use Chrome or Edge, or use the CSV / JSON backups instead.");
+    return;
+  }
+  try{
+    const h = await window.showSaveFilePicker({
+      suggestedName: "gatehouse-log.json",
+      types: [{description:"Gate house log", accept:{"application/json":[".json"]}}]
+    });
+    fileHandle = h;
+    await idbSet("logFile", h);
+    // If the picked file already has entries, merge them in.
+    try{
+      const f = await h.getFile();
+      const txt = (await f.text()).trim();
+      if(txt){
+        const inc = JSON.parse(txt);
+        if(Array.isArray(inc)){
+          const added = mergeEntries(inc);
+          if(added) toast(added + " existing entr" + (added===1?"y":"ies") + " loaded from that file.");
+        }
+      }
+    }catch(e){ /* new or empty file */ }
+    await saveToFile(true);
+    fsUi();
+    render();
+  }catch(e){ if(e && e.name !== "AbortError") alert("Could not connect file: " + e.message); }
+}
+async function disconnectFile(){
+  fileHandle = null;
+  try{ await idbSet("logFile", null); }catch(e){}
+  fsUi();
+}
+async function saveToFile(announce){
+  if(!fileHandle) { if(announce) alert("No log file connected yet."); return; }
+  try{
+    if((await fileHandle.queryPermission({mode:"readwrite"})) !== "granted"){
+      if((await fileHandle.requestPermission({mode:"readwrite"})) !== "granted"){ fsUi("needsPermission"); return; }
+    }
+    const w = await fileHandle.createWritable();
+    await w.write(JSON.stringify(entries, null, 2));
+    await w.close();
+    fsUi("saved");
+    if(announce) toast("Saved " + entries.length + " entries to " + fileHandle.name + ".");
+  }catch(e){ fsUi("error", e.message); }
+}
+function fsUi(state, msg){
+  const dot = document.getElementById("fsDot"), s = document.getElementById("fsStatus");
+  const btn = document.getElementById("btnConnect");
+  if(!dot) return;
+  dot.classList.remove("ok");
+  if(!fsSupported()){
+    s.textContent = "Saving in this browser only (" + entries.length + " entries). This browser does not support writing to a log file — use Chrome or Edge for that.";
+    btn.disabled = true; return;
+  }
+  if(!fileHandle){ s.textContent = "Saving in this browser only (" + entries.length + " entries). No log file connected."; return; }
+  if(state === "needsPermission"){ s.textContent = "Log file \"" + fileHandle.name + "\" connected — click \"Save to file now\" to re-grant write access."; return; }
+  if(state === "error"){ s.textContent = "Could not write to \"" + fileHandle.name + "\": " + (msg||"unknown error"); return; }
+  dot.classList.add("ok");
+  s.textContent = "Saving to \"" + fileHandle.name + "\" and to this browser (" + entries.length + " entries).";
+}
+
+/* ========== helpers ========== */
+const pad = n => String(n).padStart(2,"0");
+const ymd = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const hm  = d => pad(d.getHours())+":"+pad(d.getMinutes());
+function fmt(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}) + " · " +
+         d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+}
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function hl(s, q){
+  s = esc(s||"");
+  if(!q) return s;
+  const t = q.trim().replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  if(!t) return s;
+  return s.replace(new RegExp("("+t+")","gi"), "<mark>$1</mark>");
+}
+function normPlate(v){ return String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
+function toast(msg, warn){
+  const t = document.getElementById("toast");
+  t.className = "toast" + (warn ? " warn" : "");
+  t.innerHTML = msg;
+  t.classList.remove("hidden");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.add("hidden"), 9000);
+}
+
+/* ========== tabs & clock ========== */
+function showTab(which){
+  ["checkin","log","settings"].forEach(k => {
+    document.getElementById("view"+k[0].toUpperCase()+k.slice(1)).classList.toggle("hidden", k!==which);
+    document.getElementById("tab"+k[0].toUpperCase()+k.slice(1)).classList.toggle("active", k===which);
+  });
+  if(which==="checkin") document.getElementById("plate").focus();
+  if(which==="log") document.getElementById("q").focus();
+  if(which==="settings") fsUi();
+  render();
+}
+function tick(){
+  const d = new Date();
+  document.getElementById("clockT").textContent = d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+  document.getElementById("clockD").textContent = d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+}
+
+/* ========== check in ========== */
+document.getElementById("plate").addEventListener("input", e => {
+  e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9 \-]/g,"");
+  recallVehicle();
+});
+document.getElementById("plate").addEventListener("blur", recallVehicle);
+["plate","company","person"].forEach(id =>
+  document.getElementById(id).addEventListener("input", e => e.target.classList.remove("err")));
+
+/* --- returning vehicle recall: fills company / partner ID / purpose, never the person --- */
+const RECALL = ["company","purpose"];
+let autoFilled = new Set();
+
+RECALL.forEach(id => {
+  const el = document.getElementById(id);
+  ["input","change"].forEach(ev => el.addEventListener(ev, () => {
+    if(el.dataset.auto !== "1"){ autoFilled.delete(id); el.classList.remove("auto"); }
+    el.dataset.auto = "";
+  }));
+});
+function clearAuto(){
+  autoFilled.forEach(id => {
+    const el = document.getElementById(id);
+    el.value = ""; el.classList.remove("auto");
+  });
+  autoFilled.clear();
+}
+function setAuto(id, val){
+  const el = document.getElementById(id);
+  if(!val) return;
+  if(el.value !== "" && !autoFilled.has(id)) return;   // never overwrite what the guard typed
+  el.dataset.auto = "1";
+  el.value = val;
+  el.dataset.auto = "";
+  el.classList.add("auto");
+  autoFilled.add(id);
+}
+function vehicleHistory(norm){
+  if(!norm || norm.length < 3) return [];
+  return entries.filter(x => (x.plateNorm || normPlate(x.plate)) === norm)
+                .sort((a,b) => new Date(b.ts) - new Date(a.ts));
+}
+function recallVehicle(){
+  const hint = document.getElementById("vehHint");
+  const norm = normPlate(document.getElementById("plate").value);
+  const hist = vehicleHistory(norm);
+
+  if(!hist.length){
+    clearAuto();
+    hint.classList.add("hidden");
+    document.getElementById("personList").innerHTML = allPersonOptions();
+    return;
+  }
+  const last = hist.find(x => x.company) || hist[0];
+  setAuto("company", last.company);
+  setAuto("purpose", (hist.find(x => x.purpose) || {}).purpose);
+
+  // suggest this vehicle's previous drivers first, but never fill the name in
+  const drivers = [...new Set(hist.map(x => (x.person||"").trim()).filter(Boolean))];
+  document.getElementById("personList").innerHTML =
+    drivers.map(v => "<option value=\""+esc(v)+"\">").join("") + allPersonOptions(drivers);
+
+  const filled = RECALL.filter(id => autoFilled.has(id))
+    .map(id => ({company:"company", purpose:"purpose"})[id]);
+  hint.innerHTML = "<b>Returning vehicle</b> &mdash; " + esc(last.company)
+    + " &nbsp;·&nbsp; " + hist.length + " previous visit" + (hist.length===1?"":"s")
+    + ", last on " + esc(fmt(hist[0].ts))
+    + (drivers.length ? "<br>Previous driver" + (drivers.length===1?"":"s") + ": " + esc(drivers.slice(0,3).join(", ")) + (drivers.length>3 ? ", &hellip;" : "") : "")
+    + (filled.length ? "<br>Filled in " + filled.join(", ") + " from the last visit &mdash; type over it if it has changed. <b>Enter the driver name.</b>" : "")
+    + " &nbsp;<a onclick=\"seeVisits('" + esc(norm) + "')\">See all visits</a>";
+  hint.classList.remove("hidden");
+}
+function seeVisits(norm){
+  showTab("log");
+  clearFilters();
+  document.getElementById("q").value = norm;
+  render();
+}
+function allPersonOptions(exclude){
+  const skip = new Set(exclude || []);
+  return [...new Set(entries.map(x => (x.person||"").trim()).filter(Boolean))]
+    .filter(v => !skip.has(v)).sort((a,b)=>a.localeCompare(b))
+    .map(v => "<option value=\""+esc(v)+"\">").join("");
+}
+
+document.getElementById("form").addEventListener("submit", e => {
+  e.preventDefault();
+  const g = id => document.getElementById(id).value.trim();
+  const rec = {
+    id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()),
+    ts: new Date().toISOString(),
+    plate: g("plate").toUpperCase(), plateNorm: normPlate(g("plate")),
+    company: g("company"), person: g("person"),
+    purpose: g("purpose"), notes: g("notes")
+  };
+  let bad = null;
+  ["plate","company","person"].forEach(f => {
+    const el = document.getElementById(f);
+    if(!rec[f]){ el.classList.add("err"); bad = bad || el; }
+  });
+  if(bad){ bad.focus(); toast("License plate, company and person name are all required.", true); return; }
+
+  // Duplicate guard: same plate already checked in within the last 5 minutes
+  const dup = entries.find(x => x.plateNorm === rec.plateNorm &&
+                (new Date(rec.ts) - new Date(x.ts)) < 5*60*1000);
+  if(dup && !confirm("Plate " + rec.plate + " was already checked in at " + fmt(dup.ts) + ".\n\nAdd another entry anyway?")) return;
+
+  entries.push(rec);
+  saveLocal(); saveToFile(false); syncToSheet(rec);
+  toast("<b>" + esc(rec.plate) + "</b> &mdash; " + esc(rec.company) + " (" + esc(rec.person) + ") checked in at <b>" + fmt(rec.ts) + "</b>.");
+  resetForm(false);
+  render();
+});
+function resetForm(clearToast){
+  document.getElementById("form").reset();
+  autoFilled.clear();
+  RECALL.forEach(id => document.getElementById(id).classList.remove("auto"));
+  document.getElementById("vehHint").classList.add("hidden");
+  ["plate","company","person"].forEach(id => document.getElementById(id).classList.remove("err"));
+  document.getElementById("plate").focus();
+  if(clearToast) document.getElementById("toast").classList.add("hidden");
+}
+
+/* ========== log: filter, sort, render ========== */
+let sortKey = "ts", sortDir = -1;
+document.querySelectorAll("th[data-sort]").forEach(th =>
+  th.addEventListener("click", () => {
+    const k = th.dataset.sort;
+    if(sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = (k==="ts" ? -1 : 1); }
+    render();
+  }));
+["q","dFrom","dTo","tFrom","tTo","fPurpose"].forEach(id =>
+  document.getElementById(id).addEventListener("input", render));
+
+function filtered(){
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const qp = normPlate(q);
+  const dF = document.getElementById("dFrom").value, dT = document.getElementById("dTo").value;
+  const tF = document.getElementById("tFrom").value, tT = document.getElementById("tTo").value;
+  const pu = document.getElementById("fPurpose").value;
+
+  let out = entries.filter(x => {
+    const d = new Date(x.ts), day = ymd(d), time = hm(d);
+    if(dF && day < dF) return false;
+    if(dT && day > dT) return false;
+    if(tF && tT && tF > tT){ if(!(time >= tF || time <= tT)) return false; }   // overnight window
+    else { if(tF && time < tF) return false; if(tT && time > tT) return false; }
+    if(pu && (x.purpose||"") !== pu) return false;
+    if(q){
+      const hay = [x.plate,x.company,x.person,x.purpose,x.notes]
+        .map(v => String(v||"").toLowerCase()).join(" ");
+      const plateHit = qp && String(x.plateNorm || normPlate(x.plate)).includes(qp);
+      if(!hay.includes(q) && !plateHit) return false;
+    }
+    return true;
+  });
+
+  out.sort((a,b) => {
+    let r;
+    if(sortKey === "ts") r = new Date(a.ts) - new Date(b.ts);
+    else r = String(a[sortKey]||"").localeCompare(String(b[sortKey]||""), undefined, {sensitivity:"base"});
+    return r * sortDir || (new Date(b.ts) - new Date(a.ts));
+  });
+  return out;
+}
+
+function quick(kind){
+  const t = new Date(), set = (f,to) => {
+    document.getElementById("dFrom").value = f; document.getElementById("dTo").value = to;
+  };
+  if(kind==="today") set(ymd(t), ymd(t));
+  else if(kind==="yesterday"){ const y = new Date(t); y.setDate(y.getDate()-1); set(ymd(y), ymd(y)); }
+  else if(kind==="7"){ const s = new Date(t); s.setDate(s.getDate()-6); set(ymd(s), ymd(t)); }
+  else if(kind==="30"){ const s = new Date(t); s.setDate(s.getDate()-29); set(ymd(s), ymd(t)); }
+  else set("","");
+  render();
+}
+function clearFilters(){
+  ["q","dFrom","dTo","tFrom","tTo"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("fPurpose").value = "";
+  render();
+}
+
+function render(){
+  // datalists + purpose filter options
+  const uniq = k => [...new Set(entries.map(x => (x[k]||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  [["companyList","company"],["personList","person"]].forEach(([el,k]) => {
+    document.getElementById(el).innerHTML = uniq(k).map(v => "<option value=\""+esc(v)+"\">").join("");
+  });
+  const puSel = document.getElementById("fPurpose"), keep = puSel.value;
+  puSel.innerHTML = "<option value=\"\">All</option>" + uniq("purpose").map(v=>"<option>"+esc(v)+"</option>").join("");
+  puSel.value = keep;
+
+  // sort arrows
+  document.querySelectorAll("[id^=ar-]").forEach(s => s.textContent = "");
+  const ar = document.getElementById("ar-"+sortKey); if(ar) ar.textContent = sortDir>0 ? "▲" : "▼";
+
+  // badge + recent
+  const today = ymd(new Date());
+  const todayN = entries.filter(x => ymd(new Date(x.ts))===today).length;
+  document.getElementById("logBadge").textContent = entries.length ? "("+entries.length+")" : "";
+
+  const recent = [...entries].sort((a,b)=>new Date(b.ts)-new Date(a.ts)).slice(0,5);
+  document.getElementById("recent").innerHTML = recent.length
+    ? "<div class=\"tbl-wrap\" style=\"max-height:none\"><table><thead><tr><th>Time</th><th>Plate</th><th>Company</th><th>Person</th></tr></thead><tbody>"
+      + recent.map(x => "<tr><td class=\"when\">"+esc(fmt(x.ts))+"</td><td class=\"plate\">"+esc(x.plate)
+        +"</td><td>"+esc(x.company)+"</td><td>"+esc(x.person)+"</td></tr>").join("")
+      + "</tbody></table></div>"
+    : "<div class=\"empty\">No entries yet today.</div>";
+
+  // log table
+  const q = document.getElementById("q").value.trim();
+  const rows = filtered();
+  document.getElementById("count").innerHTML =
+    "Showing <b>"+rows.length+"</b> of <b>"+entries.length+"</b> total entries &nbsp;·&nbsp; <b>"+todayN+"</b> today";
+  document.getElementById("rows").innerHTML = rows.length
+    ? rows.map(x => "<tr>"
+        + "<td class=\"when\">"+esc(fmt(x.ts))+"</td>"
+        + "<td class=\"plate\">"+hl(x.plate,q)+"</td>"
+        + "<td>"+hl(x.company,q)+"</td>"
+        + "<td>"+hl(x.person,q)+"</td>"
+        + "<td>"+esc(x.purpose||"")+"</td>"
+        + "<td>"+hl(x.notes,q)+"</td>"
+        + "<td class=\"noprint\"><button class=\"del\" title=\"Delete entry\" onclick=\"delEntry('"+x.id+"')\">&#10005;</button></td>"
+      + "</tr>").join("")
+    : "<tr><td colspan=\"7\" class=\"empty\">No entries match these filters.</td></tr>";
+
+  fsUi();
+}
+
+function delEntry(id){
+  const x = entries.find(e => e.id === id);
+  if(!x) return;
+  if(!confirm("Delete the entry for " + x.plate + " on " + fmt(x.ts) + "?")) return;
+  entries = entries.filter(e => e.id !== id);
+  saveLocal(); saveToFile(false); render();
+}
+
+/* ========== export / import ========== */
+function csv(rows){
+  const head = ["Date","Time","License Plate","Company","Person","Purpose","Notes","Timestamp (ISO)"];
+  const q = v => '"' + String(v==null?"":v).replace(/"/g,'""') + '"';
+  const lines = [head.map(q).join(",")];
+  rows.forEach(x => {
+    const d = new Date(x.ts);
+    lines.push([d.toLocaleDateString(), d.toLocaleTimeString(), x.plate, x.company, x.person,
+                x.purpose||"", x.notes||"", x.ts].map(q).join(","));
+  });
+  return "﻿" + lines.join("\r\n");
+}
+function dl(name, text, type){
+  const b = new Blob([text], {type: type || "text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(b); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+const stamp = () => { const d=new Date(); return ymd(d)+"_"+pad(d.getHours())+pad(d.getMinutes()); };
+function exportCsv(){
+  const rows = filtered();
+  if(!rows.length){ alert("Nothing to export with the current filters."); return; }
+  dl("gatehouse-entries_"+stamp()+".csv", csv(rows));
+}
+function exportAllCsv(){
+  if(!entries.length){ alert("No entries yet."); return; }
+  dl("gatehouse-all-entries_"+stamp()+".csv", csv([...entries].sort((a,b)=>new Date(b.ts)-new Date(a.ts))));
+}
+function exportJson(){
+  dl("gatehouse-backup_"+stamp()+".json", JSON.stringify(entries,null,2), "application/json");
+}
+function mergeEntries(inc){
+  const seen = new Set(entries.map(x => x.id));
+  const sig  = new Set(entries.map(x => x.ts+"|"+x.plateNorm));
+  let n = 0;
+  inc.forEach(x => {
+    if(!x || !x.ts) return;
+    x.plateNorm = x.plateNorm || normPlate(x.plate);
+    x.id = x.id || (x.ts+"|"+x.plateNorm);
+    if(seen.has(x.id) || sig.has(x.ts+"|"+x.plateNorm)) return;
+    seen.add(x.id); sig.add(x.ts+"|"+x.plateNorm);
+    entries.push(x); n++;
+  });
+  if(n){ saveLocal(); }
+  return n;
+}
+function importJson(input){
+  const f = input.files && input.files[0];
+  if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const inc = JSON.parse(r.result);
+      if(!Array.isArray(inc)) throw new Error("File does not contain a list of entries.");
+      const n = mergeEntries(inc);
+      saveToFile(false); render();
+      alert(n + " new entr" + (n===1?"y":"ies") + " imported. " + (inc.length-n) + " skipped as duplicates.");
+    }catch(e){ alert("Could not read that file: " + e.message); }
+    input.value = "";
+  };
+  r.readAsText(f);
+}
+function wipe(){
+  if(!confirm("Delete ALL " + entries.length + " entries stored on this device? Download a backup first — this cannot be undone.")) return;
+  if(!confirm("Last chance. Really delete everything?")) return;
+  entries = []; saveLocal(); saveToFile(false); render();
+  alert("All entries deleted.");
+}
+
+/* ========== google sheets sync ========== */
+const LS_SHEET_KEY = "shfb_gatehouse_sheet_url";
+let sheetUrl = "";
+
+function loadSheetUrl(){
+  sheetUrl = localStorage.getItem(LS_SHEET_KEY) || "";
+  const el = document.getElementById("sheetUrl");
+  if(el) el.value = sheetUrl;
+  syncUi();
+}
+function saveSheetUrl(){
+  sheetUrl = (document.getElementById("sheetUrl").value || "").trim();
+  localStorage.setItem(LS_SHEET_KEY, sheetUrl);
+  syncUi();
+  toast(sheetUrl ? "Sheet sync URL saved." : "Sheet sync URL cleared.");
+}
+function clearSheetUrl(){
+  document.getElementById("sheetUrl").value = "";
+  sheetUrl = "";
+  localStorage.removeItem(LS_SHEET_KEY);
+  syncUi();
+}
+function syncUi(){
+  const dot = document.getElementById("syncDot"), s = document.getElementById("syncStatus");
+  if(!dot) return;
+  dot.classList.toggle("ok", !!sheetUrl);
+  s.textContent = sheetUrl ? "Connected — entries sync to Google Sheets." : "Not configured — enter your Apps Script URL below.";
+}
+async function syncToSheet(rec){
+  if(!sheetUrl) return;
+  try{
+    await fetch(sheetUrl, { method:"POST", mode:"no-cors", body:JSON.stringify(rec) });
+  }catch(e){ /* silently fail — entry is still saved locally */ }
+}
+async function testSheetSync(){
+  if(!sheetUrl){ alert("Save an Apps Script URL first."); return; }
+  const rec = {
+    ts: new Date().toISOString(), plate:"TEST-001", plateNorm:"TEST001",
+    company:"Second Harvest Test", person:"Test User", purpose:"Other", notes:"Connectivity test"
+  };
+  await syncToSheet(rec);
+  toast("Test entry sent — check your Google Sheet.");
+}
+
+/* ========== boot ========== */
+loadLocal();
+loadSheetUrl();
+tick(); setInterval(tick, 15000);
+render();
+restoreFileHandle();
+document.getElementById("plate").focus();
+</script>
+</body>
+</html>
